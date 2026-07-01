@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+.pytest_cache/
+vendored-models/
+# models.sha256 is the vendoring manifest and must be tracked.
+# models.sha256
