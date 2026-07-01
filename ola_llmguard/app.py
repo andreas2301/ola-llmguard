@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, conlist, constr
 
 from ola_gateway_shared.transport import caller_cn_dependency
 
@@ -9,6 +10,12 @@ from .store import TokenStore
 
 class _AnonymizeRequest(BaseModel):
     prompt: str
+
+
+class _AnonymizeBatchRequest(BaseModel):
+    # Bound the fan-out AND per-item size to prevent CPU/memory DoS (each text runs the
+    # DeBERTa model). Tune to the conversation cap: up to 128 messages, 16 KiB each.
+    texts: conlist(constr(max_length=16384), max_length=128)
 
 
 class _DeanonymizeRequest(BaseModel):
@@ -43,6 +50,17 @@ def create_app(
             # Fail closed: block the request and never echo the raw prompt.
             raise HTTPException(status_code=500, detail="anonymization failed") from None
 
+        token = store.issue(caller_cn, mapping)
+        return {"redacted": redacted, "token": token}
+
+    @app.post("/anonymize_batch")
+    async def anonymize_batch(req: _AnonymizeBatchRequest, caller_cn: str = caller_dep) -> dict:
+        try:
+            # Offload the N blocking DeBERTa runs off the event loop (a batch is the
+            # worst blocking offender). Fail closed on any engine error.
+            redacted, mapping = await run_in_threadpool(engine.anonymize_batch, req.texts)
+        except Exception:
+            raise HTTPException(status_code=500, detail="anonymization failed") from None
         token = store.issue(caller_cn, mapping)
         return {"redacted": redacted, "token": token}
 

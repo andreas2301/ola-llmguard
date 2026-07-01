@@ -19,6 +19,22 @@ class PiiEngine(ABC):
         """Return redacted text plus a {placeholder: original} mapping."""
         ...
 
+    def anonymize_batch(self, texts):
+        """Redact a list of texts; return (redacted_list, merged_mapping).
+
+        WARNING — test/fallback default only. This loops the single-text ``anonymize``
+        (each with its OWN mapping namespace) and merges the results, so two texts can
+        emit the SAME placeholder key for DIFFERENT originals and the merge clobbers one
+        of them → a wrong restore. Any engine used in production MUST override this to
+        redact all texts under ONE shared placeholder namespace (see ``LlmGuardEngine``).
+        """
+        redacted, mapping = [], {}
+        for t in texts:
+            r, m = self.anonymize(t)
+            redacted.append(r)
+            mapping.update(m)
+        return redacted, mapping
+
     @abstractmethod
     def deanonymize(self, text: str, mapping: dict) -> str:
         """Restore placeholders in ``text`` using ``mapping``."""
@@ -53,6 +69,17 @@ class LlmGuardEngine(PiiEngine):
             vault = Vault()
             self._scanner._vault = vault
             redacted, _, _ = self._scanner.scan(text)
+            mapping = dict(vault.get())
+        return redacted, mapping
+
+    def anonymize_batch(self, texts):
+        with self._lock:
+            vault = Vault()
+            self._scanner._vault = vault
+            redacted = []
+            for t in texts:
+                r, _, _ = self._scanner.scan(t)
+                redacted.append(r)
             mapping = dict(vault.get())
         return redacted, mapping
 
