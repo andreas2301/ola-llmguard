@@ -1,0 +1,9 @@
+# Keep the build context small — the .venv alone is multi-GB. Do NOT exclude
+# wheels/ or vendored-models/: the Dockerfile COPYs them into the image.
+.venv/
+venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.git/
+*.egg-info/

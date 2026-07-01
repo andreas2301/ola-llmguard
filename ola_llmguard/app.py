@@ -23,6 +23,14 @@ class _DeanonymizeRequest(BaseModel):
     text: str
 
 
+class _DeanonymizeBatchRequest(BaseModel):
+    token: str
+    # Same bounds as _AnonymizeBatchRequest: cap the fan-out AND per-item size so a
+    # single restore call cannot be turned into a CPU/memory DoS. Symmetric with the
+    # batch that produced the token (up to 128 texts, 16 KiB each).
+    texts: conlist(constr(max_length=16384), max_length=128)
+
+
 class _DiscardRequest(BaseModel):
     token: str
 
@@ -75,6 +83,29 @@ def create_app(
             restored = engine.deanonymize(req.text, mapping)
         except Exception:
             # Fail closed: never echo the redacted text or the mapping.
+            raise HTTPException(status_code=500, detail="deanonymization failed") from None
+
+        return {"restored": restored}
+
+    @app.post("/deanonymize_batch")
+    async def deanonymize_batch(
+        req: _DeanonymizeBatchRequest, caller_cn: str = caller_dep
+    ) -> dict:
+        # SINGLE consume for the WHOLE batch: the token is single-use + caller-bound,
+        # so restoring a response's content plus every tool-call argument costs exactly
+        # one token. An empty texts=[] still consumes the token and returns [].
+        mapping = store.consume(req.token, caller_cn)
+        if mapping is None:
+            # No leak of whether the token existed or who owned it.
+            raise HTTPException(status_code=404, detail="invalid or expired token")
+
+        try:
+            # Offload the N blocking deanonymize runs off the event loop. Fail closed:
+            # never echo the redacted texts or the mapping on error.
+            restored = await run_in_threadpool(
+                engine.deanonymize_batch, req.texts, mapping
+            )
+        except Exception:
             raise HTTPException(status_code=500, detail="deanonymization failed") from None
 
         return {"restored": restored}

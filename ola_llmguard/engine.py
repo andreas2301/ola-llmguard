@@ -40,6 +40,18 @@ class PiiEngine(ABC):
         """Restore placeholders in ``text`` using ``mapping``."""
         ...
 
+    def deanonymize_batch(self, texts, mapping):
+        """Restore a list of texts against ONE shared mapping; order-preserving.
+
+        Unlike ``anonymize_batch`` this needs NO engine override: deanonymize is
+        stateless given the mapping (a pure placeholder->original substitution), so
+        looping the single-text ``deanonymize`` over the SAME mapping is correct and
+        cannot collide. The symmetry with ``anonymize_batch`` lets a caller redact a
+        conversation under one token and restore the whole response (content + every
+        tool-call argument) with that single token in one call.
+        """
+        return [self.deanonymize(t, mapping) for t in texts]
+
 
 class LlmGuardEngine(PiiEngine):
     """REAL PII engine backed by Protect AI's llm-guard Anonymize scanner.
