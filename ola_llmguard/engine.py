@@ -1,10 +1,32 @@
+import dataclasses
 import threading
 from abc import ABC, abstractmethod
 
+from huggingface_hub import snapshot_download
 from llm_guard.input_scanners import Anonymize
 from llm_guard.input_scanners.anonymize_helpers import DEBERTA_AI4PRIVACY_v2_CONF
 from llm_guard.output_scanners import Deanonymize
 from llm_guard.vault import Vault
+
+
+def _offline_recognizer_conf():
+    """Pin llm-guard's DeBERTa conf to the VENDORED local snapshot so optimum/transformers
+    load from disk, never the network.
+
+    ``DEBERTA_AI4PRIVACY_v2_CONF`` references the model by repo-id. optimum's
+    ``ORTModelForTokenClassification.from_pretrained`` then calls ``list_repo_files`` (an HF
+    API call) to discover the onnx file — which is FATAL under ``HF_HUB_OFFLINE=1`` on the
+    airgapped net-ai network (crash: ``OfflineModeIsEnabled``). Resolving the already-cached
+    snapshot to a local directory path makes the whole load offline-clean. Verified with
+    ``--network none``.
+    """
+    dm = DEBERTA_AI4PRIVACY_v2_CONF["DEFAULT_MODEL"]
+    snap = snapshot_download(dm.path, revision=dm.revision, local_files_only=True)
+    conf = dict(DEBERTA_AI4PRIVACY_v2_CONF)
+    conf["DEFAULT_MODEL"] = dataclasses.replace(
+        dm, path=snap, onnx_path=snap, revision=None, onnx_revision=None
+    )
+    return conf
 
 
 class PiiEngine(ABC):
@@ -71,7 +93,7 @@ class LlmGuardEngine(PiiEngine):
         # version is pinned in requirements.txt. The lock serializes the swap.
         self._scanner = Anonymize(
             Vault(),
-            recognizer_conf=DEBERTA_AI4PRIVACY_v2_CONF,
+            recognizer_conf=_offline_recognizer_conf(),
             use_onnx=True,
         )
 
