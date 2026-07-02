@@ -20,18 +20,15 @@ mkdir -p "${HF_CACHE_DIR}" "${SPACY_DIR}"
 # optimum+transformers can load the model entirely from the vendored HF cache in
 # offline mode.
 echo "Vendoring Isotonic/deberta-v3-base_finetuned_ai4privacy_v2 (ONNX, rev ${MODEL_REVISION})..."
+# NOTE: ALL allow-patterns MUST be on ONE --include. huggingface-cli's --include is
+# nargs='+' (NOT append), so repeated `--include A --include B` keeps only the LAST
+# pattern — which silently skipped the onnx/ model, downloading only special_tokens_map.json.
 .venv/bin/huggingface-cli download \
     Isotonic/deberta-v3-base_finetuned_ai4privacy_v2 \
     --revision "${MODEL_REVISION}" \
     --cache-dir "${HF_CACHE_DIR}" \
     --local-dir-use-symlinks False \
-    --include "onnx/*" \
-    --include "config.json" \
-    --include "*.json" \
-    --include "tokenizer*" \
-    --include "spm.model" \
-    --include "added_tokens.json" \
-    --include "special_tokens_map.json"
+    --include "onnx/*" "config.json" "*.json" "tokenizer*" "spm.model" "added_tokens.json" "special_tokens_map.json"
 
 # spaCy small models required by llm-guard's Presidio analyzer.
 # Pin to 3.8.x to match the spacy version pulled in by llm-guard.
