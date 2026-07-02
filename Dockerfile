@@ -40,8 +40,10 @@ COPY ola_llmguard/ /app/ola_llmguard/
 # Build-stage smoke: ensure the package imports cleanly before committing the image.
 RUN python -c 'import ola_llmguard.main'
 
-# Run as a non-root user.
-RUN useradd -m -u 1000 llmguard && chown -R llmguard:llmguard /app
+# Run as a non-root user. uid 15100 is a dedicated, collision-free id (uid 1000 collides
+# with agent-routine/n8n on the host, and the :ro /certs mount is chowned to this uid —
+# a shared uid would let another service read this engine's key.pem on the host).
+RUN useradd -m -u 15100 llmguard && chown -R llmguard:llmguard /app
 USER llmguard
 
 EXPOSE 8443
