@@ -4,3 +4,4 @@ __pycache__/
 vendored-models/
 # models.sha256 is the vendoring manifest and must be tracked.
 # models.sha256
+models.sha256
