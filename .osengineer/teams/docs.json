@@ -1,0 +1,20 @@
+{
+  "team_id": "docs",
+  "folder": null,
+  "agents": [
+    "tech-writer"
+  ],
+  "owns_paths": [
+    "**/*.schema.json",
+    "service-manifest.yml",
+    "message-contract*.yaml"
+  ],
+  "reads_paths": [
+    "**"
+  ],
+  "escalates_to": [
+    "coding",
+    "infra",
+    "security"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "team_id": "testing",
+  "folder": "tests/",
+  "agents": [
+    "qa"
+  ],
+  "owns_paths": [
+    "**/test_*.py",
+    "tests/**",
+    "test/**",
+    "integration/**",
+    "e2e/**"
+  ],
+  "reads_paths": [
+    "internal/**",
+    "cmd/**",
+    "pkg/**",
+    "src/**",
+    "api/**",
+    "contracts/**"
+  ],
+  "escalates_to": [
+    "coding"
+  ]
+}

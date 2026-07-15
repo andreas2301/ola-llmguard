@@ -1,0 +1,23 @@
+{
+  "team_id": "coding",
+  "folder": null,
+  "agents": [
+    "developer",
+    "reviewer"
+  ],
+  "owns_paths": [
+    "src/**"
+  ],
+  "reads_paths": [
+    "api/**",
+    "contracts/**",
+    "ansible/**",
+    "docs/**"
+  ],
+  "escalates_to": [
+    "testing",
+    "infra",
+    "docs",
+    "security"
+  ]
+}

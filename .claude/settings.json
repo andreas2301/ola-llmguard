@@ -1,0 +1,89 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-prompt-guard.py\"",
+            "description": "osEngineer phase state injection"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-pre-edit-guard.py\"",
+            "description": "osEngineer phase-gate & owns_paths"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-read-guard.py\"",
+            "description": "osEngineer read-before-edit advisory"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-pre-bash-guard.py\"",
+            "description": "osEngineer destructive-bash guard"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-post-tool.py\"",
+            "description": "osEngineer context monitor + budget tracker"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-session-start.py\"",
+            "description": "osEngineer banner"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 \"/root/sideProjects/osEngineer/hooks/osEngineer-statusline.py\"",
+    "padding": 0
+  },
+  "env": {
+    "OSENGINEER_HOME": "/root/sideProjects/osEngineer",
+    "OSENGINEER_VERSION": "0.4.0"
+  },
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-playwright"
+      ]
+    }
+  }
+}

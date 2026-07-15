@@ -1,0 +1,22 @@
+{
+  "team_id": "security",
+  "folder": null,
+  "agents": [
+    "red-team-local",
+    "red-team-architect"
+  ],
+  "owns_paths": [
+    ".github/codeql/**",
+    "security/**",
+    ".secretscanignore",
+    ".base64scanignore"
+  ],
+  "reads_paths": [
+    "**"
+  ],
+  "escalates_to": [
+    "coding",
+    "infra",
+    "docs"
+  ]
+}
